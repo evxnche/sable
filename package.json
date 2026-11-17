@@ -28,7 +28,9 @@
     "desktop:icon": "node scripts/make-icon.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "desktop:dist:mac": "pnpm desktop:build && electron-builder --mac",
+    "desktop:pack:mac": "pnpm desktop:build && electron-builder --mac --dir"
   },
   "devDependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.325",
@@ -111,6 +113,34 @@
       "uninstallerIcon": "build/icon.ico",
       "uninstallDisplayName": "Sable",
       "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.developer-tools",
+      "artifactName": "Sable-${version}-${arch}.${ext}",
+      "darkModeSupport": true,
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "Sable ${version}",
+      "icon": "build/icon.png",
+      "artifactName": "Sable-${version}-${arch}.${ext}"
     }
   }
 }

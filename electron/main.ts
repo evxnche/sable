@@ -1,5 +1,7 @@
 import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, Menu, screen, session, shell, webContents, type MenuItemConstructorOptions, type Rectangle, type WebContents } from 'electron';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { startServer, type RunningServer } from '../server/serve';
 import { pickFolder, type ShowFolderDialog } from './folder';
@@ -62,6 +64,33 @@ app.enableSandbox();
 // The same id as electron-builder's appId, so the taskbar groups the window with the pinned
 // shortcut and notifications carry the app's name and icon.
 if (isWin) app.setAppUserModelId('io.github.leonxlnx.sable');
+
+/**
+ * macOS: an app opened from Finder or the Dock gets launchd's bare PATH (/usr/bin:/bin:...), not the
+ * one the user's shell sets up, so `codex`, `git` from Homebrew, node and the like would not be
+ * found. Ask the user's login shell for its PATH once, before the server starts, and put it first.
+ */
+function adoptShellPath() {
+  const sh = process.env.SHELL || '/bin/zsh';
+  const mark = '__SABLE_PATH__';
+  let shellPath = '';
+  try {
+    const out = execFileSync(sh, ['-ilc', `printf '${mark}%s${mark}' "$PATH"`], {
+      encoding: 'utf8',
+      timeout: 6000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+      env: { ...process.env, DISABLE_AUTO_UPDATE: 'true', ZSH_DISABLE_COMPFIX: 'true' },
+    });
+    shellPath = out.split(mark)[1] ?? '';
+  } catch {
+    /* a slow or broken shell profile: fall back to the usual places below */
+  }
+  const home = os.homedir();
+  const usual = ['/opt/homebrew/bin', '/opt/homebrew/sbin', '/usr/local/bin', path.join(home, '.local/bin'), path.join(home, '.bun/bin'), path.join(home, '.npm-global/bin')];
+  const parts = [...shellPath.split(':'), ...(process.env.PATH ?? '').split(':'), ...usual].filter(Boolean);
+  process.env.PATH = [...new Set(parts)].join(':');
+}
+if (isMac && !process.env.SABLE_KEEP_PATH) adoptShellPath();
 
 // The Agent SDK starts the Claude Code binary that ships with the app (an extra resource when
 // packaged, the staged copy in dist-resources/ when run from the project); see build-electron.mjs.

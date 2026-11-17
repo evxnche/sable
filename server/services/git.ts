@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { open, stat } from 'node:fs/promises';
 import path from 'node:path';
 import type { DiffHunk, FileDiff, GitCommitResult, GitFileStatus, GitStatus } from '../../shared/protocol';
@@ -120,8 +121,16 @@ const toPosix = (p: string) => p.replace(/\\/g, '/');
 
 /** Repo-root-relative git path → path relative to `cwd` (forward slashes). */
 function relToCwd(root: string, cwd: string, p: string): string {
-  if (path.resolve(root) === path.resolve(cwd)) return p;
-  return toPosix(path.relative(cwd, path.join(root, p)));
+  // git reports the real top-level path; a cwd reached through a symlink (macOS /var → /private/var,
+  // a linked project folder) is resolved the same way, or every path would climb out with ../.
+  let base = path.resolve(cwd);
+  try {
+    base = realpathSync.native(base);
+  } catch {
+    /* gone: compare as given */
+  }
+  if (path.resolve(root) === base) return p;
+  return toPosix(path.relative(base, path.join(root, p)));
 }
 
 /** Reads a file prefix; null when unreadable. `binary` when NUL bytes appear in the first 8 KB. */

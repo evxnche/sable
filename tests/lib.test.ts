@@ -14,6 +14,7 @@ import {
   relPath,
   resetIn,
   shortcutKeys,
+  isMac,
   timeAgo,
 } from '../src/lib/format';
 import { fuzzy, highlightRuns, wordPrefix } from '../src/lib/fuzzy';
@@ -283,9 +284,9 @@ describe('format', () => {
     expect(langFromPath('notes')).toBe('text');
     expect(langFromPath('a.unknown')).toBe('text');
     expect(langFromPath(undefined)).toBe('text');
-    // Tests run outside a Mac browser: navigator is not a Mac.
-    expect(shortcutKeys('mod+shift+k')).toEqual(['Ctrl', 'Shift', 'K']);
-    expect(shortcutKeys('alt+enter')).toEqual(['Alt', '↵']);
+    // Node's navigator reports the host: Mac symbols on macOS, words elsewhere.
+    expect(shortcutKeys('mod+shift+k')).toEqual(isMac ? ['⌘', '⇧', 'K'] : ['Ctrl', 'Shift', 'K']);
+    expect(shortcutKeys('alt+enter')).toEqual(isMac ? ['⌥', '↵'] : ['Alt', '↵']);
     expect(shortcutKeys('esc')).toEqual(['Esc']);
   });
 });

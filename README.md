@@ -59,6 +59,7 @@ pnpm dev                  # http://localhost:5173, with the bridge attached
 pnpm test                 # vitest
 pnpm typecheck
 pnpm desktop:dist         # Windows installer in release/
+pnpm desktop:dist:mac     # macOS (Apple silicon) .dmg and .zip in release/, ad-hoc signed
 ```
 
 `pnpm desktop:pack` builds `release/win-unpacked/Sable.exe` without an installer. `pnpm desktop:dist:sable` packages into `release-sable/` instead, for when a copy running from `release/` keeps its files locked.
